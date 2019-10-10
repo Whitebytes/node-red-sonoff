@@ -1,4 +1,5 @@
 <script type="text/javascript">
+    
     RED.nodes.registerType('Sonoff PIR', {
         category: 'Sonoff',
         color: '#28AFB0',
@@ -27,15 +28,30 @@
             return this.name || this.device;
         },
         oneditprepare: function() {
-              if (($("#node-input-lat").val() === "") && ($("#node-input-lon").val() === "")) {
-                  if ("geolocation" in navigator) {
-                      navigator.geolocation.getCurrentPosition(function(position) {
-                          $("#node-input-lat").val(Number(position.coords.latitude.toFixed(5)));
-                          $("#node-input-lon").val(Number(position.coords.longitude.toFixed(5)));
-                      });
-                  }
+         
+          var timStr = function (time){
+            return time.getHours() + ':' + time.getMinutes().toString().padStart(2,'0');
+          }
+          let addTimes = ()=>{
+            var times = SunCalc.getTimes(now, $("#node-input-lat").val(), $("#node-input-lat").val());
+            $("#node-input-start option, #node-input-end option").each(function(elem){
+              var html = $(elem).html();
+              html+=`(${timStr(times[$(elem).val()])})`;
+            })
+          }
+          if (($("#node-input-lat").val() === "") && ($("#node-input-lon").val() === "")) {
+              if ("geolocation" in navigator) {
+                  navigator.geolocation.getCurrentPosition(function(position) {
+                      $("#node-input-lat").val(Number(position.coords.latitude.toFixed(5)));
+                      $("#node-input-lon").val(Number(position.coords.longitude.toFixed(5)));
+                    //  addTimes();
+                  });
+              }else{
+            //    addTimes();
               }
           }
+
+        }
     });
     </script>
     

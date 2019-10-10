@@ -7,12 +7,9 @@
             broker: { type: 'mqtt-broker', required: true },
             device: { value: 'sonoff', required: true },
             name: { value: ''},
-            minInterval:{value: 1000, required: true},
-            onValue: { value: 'ON' },
-            offValue: { value: 'OFF' },
-            cmdPrefix: { value: 'cmnd' },
-            statPrefix: { value: 'stat' },
-            telePrefix: { value: 'tele' }
+            maxOn: {},
+            groupTopics: {},
+            minInterval:{value: 1000, required: true}
         },
         icon: 'light.png',
         inputs: 1,
@@ -25,13 +22,6 @@
     
     <script type="text/x-red" data-template-name="Sonoff basic">
         <div class="form-row">
-            <label for="node-input-mode"><i class="fa fa-wrench"></i><span> Mode</span></label>
-            <select type="text" id="node-input-mode" style="width:70%;">            
-                <option value="0">%prefix%/%topic%/</option>
-                <option value="1">%topic%/%prefix%/</option>
-            </select>
-        </div>
-        <div class="form-row">
             <label for="node-input-device"><i class="icon-tag"></i> Id</label>
             <input type="text" id="node-input-device" placeholder="Sonoff id (Default: sonoff)">
         </div>
@@ -43,29 +33,18 @@
             <label for="node-input-name"><i class="icon-tag"></i> Name</label>
             <input type="text" id="node-input-name" placeholder="Name">
         </div>
-        <div class="form-row">
-            <label for="node-input-onValue"><i class="fa fa-toggle-on"></i> On</label>
-            <input type="text" id="node-input-onValue" placeholder="onValue (Default: On)">
-        </div>
-        <div class="form-row">
-            <label for="node-input-offValue"><i class="fa fa-toggle-off"></i> Off</label>
-            <input type="text" id="node-input-offValue" placeholder="offValue (Default: OFF)">
-        </div>
-        <div class="form-row">
-            <label for="node-input-cmdPrefix"><i class="fa fa-comment"></i> cmd</label>
-            <input type="text" id="node-input-cmdPrefix" placeholder="cmdPrefix (Default: cmd)">
-        </div>
-        <div class="form-row">
-            <label for="node-input-statPrefix"><i class="fa fa-comment"></i> stat</label>
-            <input type="text" id="node-input-statPrefix" placeholder="statPrefix (Default: stat)">
-        </div>
-        <div class="form-row">
-            <label for="node-input-telePrefix"><i class="fa fa-comment"></i> tele</label>
-            <input type="text" id="node-input-telePrefix" placeholder="telePrefix (Default: tele)">
-        </div>
+        
         <div class="form-row">
             <label for="node-input-minInterval"><i class="fa fa-comment"></i> minimal switch time(ms)</label>
             <input type="number" id="node-input-minInterval" placeholder="min int">
+        </div>
+        <div class="form-row">
+            <label for="node-input-maxOn"><i class="fa fa-comment"></i>Max on time in secs</label>
+            <input type="number" id="node-input-maxOn" placeholder="min int">
+        </div>
+        <div class="form-row">
+            <label for="node-input-groupTopics"><i class="fa fa-comment"></i>Group topics</label>
+            <input type="text" id="node-input-groupTopics" placeholder=",-seperated mqttopics">
         </div>
     </script>
     

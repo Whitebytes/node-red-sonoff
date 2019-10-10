@@ -4,28 +4,25 @@ module.exports = function (RED) {
     function SonoffBasic(config) {
         // Create Node
         var node = RED.nodes.createNode(this, config);
+        var statPrefix = 'stat';
+        var telePrefix = 'tele';
+        var cmdPrefix = 'cmnd';
+        var onValue = 'ON';
+        var offValue = 'OFF';
 
         // Setup mqtt broker
         const brokerConnection = RED.nodes.getNode(config.broker);
 
         // Topics
-        var topicTeleLWT = `${config.telePrefix}/${config.device}/LWT`;
+        var topicTeleLWT = `${telePrefix}/${config.device}/LWT`;
 
-        var topicCmdPower = `${config.cmdPrefix}/${config.device}/power`;
-        var topicCmdStatus = `${config.cmdPrefix}/${config.device}/status`;
+        var topicCmdPower = `${cmdPrefix}/${config.device}/power`;
+        var topicCmdStatus = `${cmdPrefix}/${config.device}/status`;
 
-        var topicStatsPower = `${config.statPrefix}/${config.device}/POWER`;
-        var topicStatsStatus = `${config.statPrefix}/${config.device}/STATUS`;
+        var topicStatsPower = `${statPrefix}/${config.device}/POWER`;
+        var topicStatsStatus = `${statPrefix}/${config.device}/STATUS`;
 
-        if(config.mode == 1){ //Custom (%topic%/%prefix%/)
-            topicTeleLWT = `${config.device}/${config.telePrefix}/LWT`;
-
-            topicCmdPower = `${config.device}/${config.cmdPrefix}/power`;
-            topicCmdStatus = `${config.device}/${config.cmdPrefix}/status`;
-
-            topicStatsPower = `${config.device}/${config.statPrefix}/POWER`;
-            topicStatsStatus = `${config.device}/${config.statPrefix}/STATUS`;
-        }
+        var groupComands = `group-${cmdPrefix}/+/POWER`;
 
         if (brokerConnection) {
             brokerConnection.register(this);
@@ -64,21 +61,29 @@ module.exports = function (RED) {
             brokerConnection.subscribe(topicStatsPower, 2, (topic, payload) => {
                
                 const stringPayload = payload.toString();
-                if (stringPayload === config.onValue) {
+                if (stringPayload === onValue) {
                     this.status({fill: 'green', shape: 'dot', text: 'On'});
                     this.send({payload: true, topic:topic});
                 }
-                if (stringPayload === config.offValue) {
+                if (stringPayload === offValue) {
                     this.status({fill: 'grey', shape: 'dot', text: 'Off'});
                     this.send({payload: false, topic:topic});
                 }
 
             }, this.id);
 
-            // On input we publish a true/false
-            this.on('input', msg => {
-                const payload = msg.payload;
+            if ( config.groupTopics &&  config.groupTopics.length>0 )
+                brokerConnection.subscribe(groupComands, 2, (topic, payload) => {
+                let data = JSON.parse(payload)
+                let group= topic.split('/')[1];
+                if (
+                    config.groupTopics.indexOf(group)>=0){
+                        this.handleInput(data.POWER);
+                    }
 
+            }, this.id);
+            
+            this.handleInput = (payload)=>{
                 //prevent loops over a relay, can cause serious damage to hardware
                 const lastTime = this.context().get('lastTime') || new Date(Date.now()-config.minInterval-1);
                 const since = Date.now() - lastTime;
@@ -91,13 +96,19 @@ module.exports = function (RED) {
                 this.context().set('lastTime', Date.now());
 
                 // We handle boolean, the onValue and msg.On to support homekit
-                if (payload === true || payload === config.onValue) {
-                    brokerConnection.client.publish(topicCmdPower, config.onValue, {qos: 0, retain: false});
+                if (payload === true || payload === onValue) {
+                    brokerConnection.client.publish(topicCmdPower, onValue, {qos: 0, retain: false});
                 }
 
-                if (payload === false || payload === config.offValue) {
-                    brokerConnection.client.publish(topicCmdPower, config.offValue, {qos: 0, retain: false});
+                if (payload === false || payload === offValue) {
+                    brokerConnection.client.publish(topicCmdPower, offValue, {qos: 0, retain: false});
                 }
+
+            }
+
+            // On input we publish a true/false
+            this.on('input', msg => {
+                this.handleInput(msg.payload)
             });
 
             // Publish a start command to get the Status
@@ -109,7 +120,9 @@ module.exports = function (RED) {
                 brokerConnection.unsubscribe(topicTeleLWT, this.id);
                 brokerConnection.unsubscribe(topicStatsPower, this.id);
                 brokerConnection.unsubscribe(topicStatsStatus, this.id);
+                brokerConnection.unsubscribe(groupComands, this.id);
                 brokerConnection.deregister(this, done);
+                
             });
         } else {
             this.status({fill: 'red', shape: 'dot', text: 'Could not connect to mqtt'});

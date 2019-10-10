@@ -60,7 +60,7 @@ module.exports = function (RED) {
        
             if (isNaN(e1)) { e1 = 1; }
             if (isNaN(e2)) { e2 = -1; }
-            var calcNight = !(e1 > 0) & (e2 < 0);
+            var calcNight = (e1 > 0) & (e2 < 0) ? false: true;
             if (calcNight!=node.msg.isNight){
                 node.send(null,{topic:'daylight',payload: !calcNight});
             }
@@ -83,7 +83,7 @@ module.exports = function (RED) {
                 end: timStr(new Date(endMillis)),
                 now: timStr(new Date(nowMillis))
             };
-            
+           
             node.updateState.call(node);
         }
 
@@ -155,11 +155,15 @@ module.exports = function (RED) {
                     this.lightDepend=='always' || 
                     ((this.lightDepend=='night')== this.msg.isNight)
                 )
-                if (validButn && validTime && this.remaining==0) {
-                            this.send({...this.msg, payload:true, key:btnPressed })
-                            this.timer = countDown(this.offAfter);
-                        }
-                        return true;
+                if (validButn && validTime ) {
+                    if ( this.remaining==0){
+                        this.send({...this.msg, payload:true, key:btnPressed })
+                        this.timer = countDown(this.offAfter);
+                    }else {
+                        this.remaining=this.offAfter;
+                    }
+                 return true;
+                }
                 
             }, this.id);
             // Publish a start command to get the Status
