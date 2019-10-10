@@ -1,0 +1,27 @@
+{
+  "name": "node-red-sonoff",
+  "version": "1.0.0",
+  "description": "Sonoff Tasmota nodeset",
+  "main": "node-red-sonoff.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "node-red": {
+    "nodes": {
+      "SonoffRFDevice": "SonoffPIR.js",
+      "SonoffBasic": "SonoffBasic.js",
+      "SonoffNetwork": "SonoffNetwork.js",
+      "DhcpEvents": "DhcpEvents.js",
+      "SonoffRFButton": "SonoffRFButton.js"
+    }
+  },
+  "dependencies": {
+    "arpping": "^0.2.0",
+    "debug": "^2.6.6",
+    "dhcp": "^0.2.18",
+    "json-stringify-pretty-compact": "^2.0.0",
+    "suncalc": "^1.8.0"
+  }
+}

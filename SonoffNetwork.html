@@ -1,0 +1,41 @@
+<script type="text/javascript">
+    RED.nodes.registerType('Sonoff Network', {
+        category: 'Sonoff',
+        color: '#28AFB0',
+        defaults: {
+            mode:{ value: '0'},
+            broker: { type: 'mqtt-broker', required: true },
+            name: { value: ''}
+        },
+        icon: 'light.png',
+        inputs: 1,
+        outputs: 1,
+        label: function() {
+            return this.name || this.device;
+        }
+    });
+    </script>
+    
+    <script type="text/x-red" data-template-name="Sonoff Network">
+        <div class="form-row">
+            <label for="node-input-mode"><i class="fa fa-wrench"></i><span> Mode</span></label>
+            <select type="text" id="node-input-mode" style="width:70%;">            
+                <option value="0">%prefix%/%topic%/</option>
+                <option value="1">%topic%/%prefix%/</option>
+            </select>
+        </div>
+        <div class="form-row">
+            <label for="node-input-device"><i class="icon-tag"></i> Id</label>
+            <input type="text" id="node-input-device" placeholder="Sonoff id (Default: sonoff)">
+        </div>
+        <div class="form-row">
+            <label for="node-input-broker"><i class="fa fa-globe"></i> Mqtt</label>
+            <input type="text" id="node-input-broker">
+        </div>
+        <div class="form-row">
+            <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+            <input type="text" id="node-input-name" placeholder="Name">
+        </div>
+       
+    </script>
+    

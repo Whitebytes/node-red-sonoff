@@ -1,0 +1,23 @@
+<script type="text/javascript">
+    RED.nodes.registerType('Dhcp events', {
+        category: 'Sonoff',
+        color: '#28AFB0',
+        defaults: {
+            name: { value: ''},
+        },
+        icon: 'arrow-in.png',
+        inputs: 0,
+        outputs: 2,
+        label: function() {
+            return this.name || 'DHCP';
+        }
+    });
+    </script>
+    
+    <script type="text/x-red" data-template-name="Dhcp events">
+        <div class="form-row">
+            <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+            <input type="text" id="node-input-name" placeholder="Name">
+        </div>
+       
+    </script>
