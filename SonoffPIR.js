@@ -40,7 +40,7 @@ module.exports = function (RED) {
             if (secs)
                 node.remaining=secs;
                
-            if (node.remaining ==0)
+            if (node.remaining <=0)
                 node.send({...node.msg, payload:false });
             else{
                 node.remaining--;
@@ -179,7 +179,7 @@ module.exports = function (RED) {
             this.status({fill: 'red', shape: 'dot', text: 'Could not connect to mqtt'});
         }
 
-        this.tick = setInterval(function() { tick(); }, 60000);
+        this.tick = setInterval(function() { tick(); }, 60*1000);
         this.tock = setTimeout(function() { tick(); }, 500);
 
         this.on("close", function() {

@@ -1,6 +1,12 @@
 'use strict';
 
 module.exports = function (RED) {
+    let states={
+        ON:1,
+        OFF:0,
+        WAITING_FEEDBACK:2,
+        UNKNOWN:3
+    }
     function SonoffBasic(config) {
         // Create Node
         var node = RED.nodes.createNode(this, config);
@@ -9,6 +15,7 @@ module.exports = function (RED) {
         var cmdPrefix = 'cmnd';
         var onValue = 'ON';
         var offValue = 'OFF';
+        var currState = states.UNKNOWN;
 
         // Setup mqtt broker
         const brokerConnection = RED.nodes.getNode(config.broker);
@@ -24,6 +31,16 @@ module.exports = function (RED) {
 
         var groupComands = `group-${cmdPrefix}/+/POWER`;
 
+        let handleState = (isOn, topic) =>{
+            if (isOn && currState!=states.ON){
+                this.send({payload: true, topic:topic});
+                currState=states.ON;
+            } else if (!isOn && currState!=states.OFF){
+                this.send({payload: false, topic:topic});
+                currState=states.OFF;
+            }
+        }
+
         if (brokerConnection) {
             brokerConnection.register(this);
             this.status({fill: 'yellow', shape: 'dot', text: 'Connecting...'});
@@ -38,7 +55,8 @@ module.exports = function (RED) {
                     this.status({fill: 'red', shape: 'dot', text: 'Offline'});
                 }
             });
-
+            
+            //handles all sonoff status reports
             brokerConnection.subscribe(topicStatsStatus, 2, (topic, payload) => {
                 const stringPayload = payload.toString();
 
@@ -46,10 +64,10 @@ module.exports = function (RED) {
                     const jsonPayload = JSON.parse(stringPayload);
                     if (jsonPayload.Status.Power === 1) {
                         this.status({fill: 'green', shape: 'dot', text: 'On'});
-                        this.send({payload: true, topic:topic});
+                        handleState(true, topic);
                     } else {
                         this.status({fill: 'grey', shape: 'dot', text: 'Off'});
-                        this.send({payload: false, topic:topic});
+                        handleState(false, topic);
                     }
                 } catch (err) {
                     this.status({fill: 'red', shape: 'dot', text: 'Error processing Status from device'});
@@ -59,15 +77,16 @@ module.exports = function (RED) {
 
             // Subscribes if the state of the device changes
             brokerConnection.subscribe(topicStatsPower, 2, (topic, payload) => {
-               
                 const stringPayload = payload.toString();
                 if (stringPayload === onValue) {
                     this.status({fill: 'green', shape: 'dot', text: 'On'});
-                    this.send({payload: true, topic:topic});
+                    //states was changed without our knowledge, eg hardware switch
+                    handleState(true, topic);
                 }
                 if (stringPayload === offValue) {
                     this.status({fill: 'grey', shape: 'dot', text: 'Off'});
-                    this.send({payload: false, topic:topic});
+                    //states was changed without our knowledge
+                    handleState(false, topic);
                 }
 
             }, this.id);
@@ -98,10 +117,12 @@ module.exports = function (RED) {
                 // We handle boolean, the onValue and msg.On to support homekit
                 if (payload === true || payload === onValue) {
                     brokerConnection.client.publish(topicCmdPower, onValue, {qos: 0, retain: false});
+                    handleState(true, topicCmdPower);
                 }
 
                 if (payload === false || payload === offValue) {
                     brokerConnection.client.publish(topicCmdPower, offValue, {qos: 0, retain: false});
+                    handleState(false, topicCmdPower);
                 }
 
             }
