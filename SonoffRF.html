@@ -1,13 +1,13 @@
 <script type="text/javascript">
     
-    RED.nodes.registerType('Sonoff PIR', {
+    RED.nodes.registerType('Sonoff RF', {
         category: 'Sonoff',
         color: '#28AFB0',
         defaults: {
-            mode:{ value: '0'},
             broker: { type: 'mqtt-broker', required: true },
             device: { value: 'sonoff', required: true },
             lightDepend:  { value: 'always' },
+            rfType: { value: 'button' },
             lon: {value:"", validate:function(v) {return ((v>=-180) && (v<=180));} },
             lat: {value:"", validate:function(v) {return ((v>=-90) && (v<=90));} },
             start: {value:"sunrise", required:true},
@@ -16,6 +16,7 @@
             end: {value:"sunset", required:true},
             endOffset: {value:0, required:true},
             offAfter: {value:300, required:true, validate:function(v) {return ((v>=5) && (v<=24*60*60));} },
+            offObey: {value:30, required:true},
             name: { value: ''},
             cmdPrefix: { value: 'cmnd' },
             telePrefix: { value: 'tele' },
@@ -23,7 +24,7 @@
         },
         icon: 'sun.png',
         inputs: 1,
-        outputs: 2,
+        outputs: 1,
         label: function() {
             return this.name || this.device;
         },
@@ -33,38 +34,45 @@
             return time.getHours() + ':' + time.getMinutes().toString().padStart(2,'0');
           }
           let addTimes = ()=>{
-            var times = SunCalc.getTimes(now, $("#node-input-lat").val(), $("#node-input-lat").val());
-            $("#node-input-start option, #node-input-end option").each(function(elem){
+            var times = SunCalc.getTimes(Date.now(), $("#node-input-lat").val(), $("#node-input-lon").val());
+            $("#node-input-start option, #node-input-end option").each(function(idx, elem){
               var html = $(elem).html();
-              html+=`(${timStr(times[$(elem).val()])})`;
+              html+=` (${timStr(times[$(elem).val()])})`;
+              $(elem).html(html);
             })
           }
           if (($("#node-input-lat").val() === "") && ($("#node-input-lon").val() === "")) {
               if ("geolocation" in navigator) {
-                  navigator.geolocation.getCurrentPosition(function(position) {
-                      $("#node-input-lat").val(Number(position.coords.latitude.toFixed(5)));
-                      $("#node-input-lon").val(Number(position.coords.longitude.toFixed(5)));
-                    //  addTimes();
-                  });
-              }else{
-            //    addTimes();
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    $("#node-input-lat").val(Number(position.coords.latitude.toFixed(5)));
+                    $("#node-input-lon").val(Number(position.coords.longitude.toFixed(5)));
+                    
+                });
               }
+          }else{
+            $.getScript('node-red-sonoff/js/suncalc.js')
+              .done(addTimes) 
           }
-
+          let daylightMode =()=>{
+              let always = $("#node-input-lightDepend").val()=='always';
+              $(".dayLight").toggleClass('hidden', always);
+          }
+          $("#node-input-lightDepend").on('change',daylightMode);
         }
+        
     });
     </script>
     
-    <script type="text/x-red" data-template-name="Sonoff PIR">
+    <script type="text/x-red" data-template-name="Sonoff RF">
+      <div class="form-row">
+        <label for="node-input-rfType"><i class="fa fa-microchip"></i>Type</label>
+        <select id="node-input-rfType" style='width:70%'>
+          <option value="button">Button</option>
+          <option value="pir">Motion sensor</option>
+        </select>
+      </div>
         <div class="form-row">
-            <label for="node-input-mode"><i class="fa fa-wrench"></i><span> Mode</span></label>
-            <select type="text" id="node-input-mode" style="width:70%;">            
-                <option value="0">%prefix%/%topic%/</option>
-                <option value="1">%topic%/%prefix%/</option>
-            </select>
-        </div>
-        <div class="form-row">
-            <label for="node-input-device"><i class="icon-tag"></i> Id</label>
+            <label for="node-input-device"><i class="fa fa-wifi"></i>Receiver</label>
             <input type="text" id="node-input-device" placeholder="Sonoff id (Default: sonoff)">
         </div>
         <div class="form-row">
@@ -76,35 +84,36 @@
             <input type="text" id="node-input-name" placeholder="Name">
         </div>
         <div class="form-row">
-            <label for="node-input-cmdPrefix"><i class="fa fa-comment"></i> cmd</label>
-            <input type="text" id="node-input-cmdPrefix" placeholder="cmdPrefix (Default: cmd)">
-        </div>
-        <div class="form-row">
-            <label for="node-input-telePrefix"><i class="fa fa-comment"></i> tele</label>
-            <input type="text" id="node-input-telePrefix" placeholder="telePrefix (Default: tele)">
-        </div>
-        <div class="form-row">
-            <label for="node-input-keyIds"><i class="fa fa-comment"></i> key-id(s)</label>
+            <label for="node-input-keyIds"><i class="fa fa-key"></i> key-id(s)</label>
             <input type="text" id="node-input-keyIds" placeholder="key-ids">
         </div>
         <div class="form-row">
-            <label for="node-input-lightDepend"><i class="fa fa-clock-o"></i>Switch when</label>
+          <label for="node-input-offAfter"><i class="fa fa-toggle-off"></i>Auto-off after</label>
+          <input type="number" id="node-input-offAfter" placeholder="in seconds">
+        </div>
+        <div class="form-row">
+          <label for="node-input-offObey"><i class="fa fa-shield"></i>Obey-off</label>
+          <input type="number" id="node-input-offObey" placeholder="keep off in seconds..">
+        </div>
+       
+        <div class="form-row">
+            <label for="node-input-lightDepend"><i class="fa fa-moon-o"></i>Switch when</label>
             <select id="node-input-lightDepend" style='width:70%'>
               <option value="always">Always, day and night</option>
               <option value="night">Only at night</option>
               <option value="day">Only during the day</option>
             </select>
           </div>
-        <div class="form-row">
+        <div class="form-row dayLight">
             <label for="node-input-lat"><i class="fa fa-globe"></i> Latitude</label>
             <input type="text" id="node-input-lat" placeholder="51.025">
           </div>
-          <div class="form-row">
+          <div class="form-row dayLight">
             <label for="node-input-lon"><i class="fa fa-globe"></i> Longitude</label>
             <input type="text" id="node-input-lon" placeholder="-1.4">
           </div>
-          <div class="form-row">
-            <label for="node-input-start"><i class="fa fa-clock-o"></i> Sunrise</label>
+          <div class="form-row dayLight">
+            <label for="node-input-start"><i class="fa fa-sun-o"></i> Sunrise</label>
             <select id="node-input-start" style='width:70%'>
               <option value="sunrise">Sunrise start</option>
               <option value="sunriseEnd">Sunrise end</option>
@@ -114,12 +123,12 @@
               <option value="nightEnd">Morning astronomical twilight starts</option>
             </select>
           </div>
-          <div class="form-row">
-            <label for="node-input-startOffset"><i class="fa fa-comment"></i>Start-offset minutes</label>
-            <input type="number" id="node-input-startOffset" placeholder="min int">
+          <div class="form-row dayLight">
+            <label for="node-input-startOffset"><i class="fa fa-plus-square"></i>Sunrise delay</label>
+            <input type="number" id="node-input-startOffset" placeholder=" + or - in minutes">
           </div>
-          <div class="form-row">
-            <label for="node-input-end"><i class="fa fa-clock-o"></i> Sunset</label>
+          <div class="form-row dayLight">
+            <label for="node-input-end"><i class="fa fa-moon-o"></i> Sunset</label>
             <select id="node-input-end" style='width:70%'>
               <option value="sunset">Sunset, civil twilight starts</option>
               <option value="sunsetStart">Sunset start</option>
@@ -129,13 +138,9 @@
               <option value="night">Dark enough for astronomy</option>
             </select>
           </div>
-          <div class="form-row">
-            <label for="node-input-endOffset"><i class="fa fa-comment"></i>End-offset minutes</label>
+          <div class="form-row dayLight">
+            <label for="node-input-endOffset"><i class="fa fa-plus-square"></i>Sunset delay</label>
             <input type="number" id="node-input-endOffset" placeholder="min int">
-          </div>
-          <div class="form-row">
-            <label for="node-input-offAfter"><i class="fa fa-comment"></i>Off-delay seconds</label>
-            <input type="number" id="node-input-offAfter" placeholder="min int">
           </div>
          
     </script>

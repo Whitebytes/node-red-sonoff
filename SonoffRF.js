@@ -4,7 +4,7 @@ module.exports = function (RED) {
     "use strict";
     var SunCalc = require('suncalc');
 
-    function SonoffPIR(config) {
+    function SonoffRF(config) {
         // Create Node
         RED.nodes.createNode(this, config);
 
@@ -188,5 +188,5 @@ module.exports = function (RED) {
         });
     }
 
-    RED.nodes.registerType('Sonoff PIR', SonoffPIR);
+    RED.nodes.registerType('Sonoff RF', SonoffRF);
 };

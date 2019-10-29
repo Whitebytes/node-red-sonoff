@@ -10,11 +10,8 @@
   "license": "ISC",
   "node-red": {
     "nodes": {
-      "SonoffRFDevice": "SonoffPIR.js",
-      "SonoffBasic": "SonoffBasic.js",
-      "SonoffNetwork": "SonoffNetwork.js",
-      "DhcpEvents": "DhcpEvents.js",
-      "SonoffRFButton": "SonoffRFButton.js"
+      "SonoffRFDevice": "SonoffRF.js",
+      "SonoffBasic": "SonoffBasic.js"
     }
   },
   "dependencies": {
