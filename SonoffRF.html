@@ -15,7 +15,7 @@
             
             end: {value:"sunset", required:true},
             endOffset: {value:0, required:true},
-            offAfter: {value:300, required:true, validate:function(v) {return ((v>=5) && (v<=24*60*60));} },
+            offAfter: {value:300, required:true, validate:function(v) {return ((v==0 || (v>=5) && (v<=24*60*60)));} },
             offObey: {value:30, required:true},
             name: { value: ''},
             cmdPrefix: { value: 'cmnd' },

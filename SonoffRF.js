@@ -160,9 +160,7 @@ module.exports = function (RED) {
         var topicTeleResult = `${telePrefix}/${config.device}/RESULT`;
         var topicLWTResult = `${telePrefix}/${config.device}/LWT`;
         var topicCmdStatus = `${cmdPrefix}/${config.device}/status`;
-
-      
-
+        
         this.on('input', function(msg) {
                 powerStateChange(msg.payload)
         });
