@@ -3,27 +3,42 @@
 module.exports = function (RED) {
     "use strict";
     var SunCalc = require('suncalc');
+    let states={
+        ON:1,
+        OFF:0,
+        OBEY_OFF:2,
+        UNKNOWN:3
+    }
 
     function SonoffRF(config) {
         // Create Node
         RED.nodes.createNode(this, config);
+        const statPrefix = 'stat';
+        const telePrefix = 'tele';
+        const cmdPrefix = 'cmnd';
+        var currTimer=null;
+        var downCounter = -1;
+        var rfState=states.UNKNOWN;
+        var powerState=states.UNKNOWN;
+        var node=this;
+        node.msg={};
 
-        this.lat = config.lat || 52.6706437;
-        this.lon = config.lon || 6.2900917;
-        this.start = config.start || 'sunrise';
-        this.end = config.end|| 'sunset';
-        this.startOffset = config.startOffset  || 0;
-        this.endOffset = config.endOffset  || 0;
-        this.lightDepend = config.lightDepend  || 'always';
-        this.name =config.name;
-        this.offAfter = config.offAfter || 60*5;//switch off after 5 minutes
-        this.remaining=0;
-        this.msg={};
-        var node = this;
+        let isOn = (value)=>{
+            return ( 
+                (typeof(value)=='string' && value.toLowerCase()=='on')
+                || value==1 
+                || value==true);
+        }
+        let isSame =  (value1, value2) => {
+            return (isOn(value1)===isOn(value2));
+        }
 
+        let armed = ()=>{
+           return config.lightDepend=='always' || 
+                ((config.lightDepend=='night')== node.msg.isNight)
+        }
        
         var toMills = function(moment, offsetInMinutes=0){
-
             return Date.UTC(
                 moment.getUTCFullYear(),
                 moment.getUTCMonth(),
@@ -36,25 +51,83 @@ module.exports = function (RED) {
                 time=time[name];
             return time.getHours() + ':' + time.getMinutes().toString().padStart(2,'0');
         }
-        var countDown =  function(secs){
-            if (secs)
-                node.remaining=secs;
-               
-            if (node.remaining <=0)
-                node.send({...node.msg, payload:false });
-            else{
-                node.remaining--;
-                node.timer = setTimeout(countDown,1000);
-                node.updateState();
+       
+        let clearTimer = ()=>{
+            downCounter=-1;
+            clearTimeout(currTimer);
+        }
+
+        let countDown=()=>{
+            if (downCounter==0)
+                this.send({...this.msg, payload:false })
+            if (downCounter<=0){
+                clearTimer()
+            } else{
+                currTimer = setTimeout(()=>{
+                    downCounter--;
+                    if (downCounter>=0){
+                        countDown();
+                        showState();
+                    }
+                },1000)
             }
+        } 
+        var powerStateChange = (state) => {
+            clearTimer();
+            powerState= isOn(state)? states.ON: states.OFF;
+            rfState=states.OFF;
+            if (!isOn(powerState)){
+                currTimer= setTimeout(()=>{
+                    rfState=states.OFF;
+                }, config.offObey*1000);
+                rfState=states.OBEY_OFF;
+            }
+            showState()
+        }
+
+        var rfReceived = () => {
+            let state =  states.ON;
+            clearTimer();
+            if (config.rfType=='pir'){
+                if (rfState==states.OBEY_OFF)
+                    return;
+            } else {
+                state = isOn(rfState) ? states.OFF: states.ON;
+            }
+            if (isOn(state))  
+                downCounter=config.offAfter;
+
+            if (!isSame(state, rfState)){
+                this.send({...this.msg, payload:isOn(state) })
+                rfState=state;
+            }
+            if (isOn(state) && downCounter>0)
+                countDown();  
+            showState();
+            
+        }
+
+        let showState = ()=>{
+            var outState = downCounter>0 ? downCounter +' secs': (rfState==states.OBEY_OFF) ? 'Obey off': 'OFF' 
+            let text = outState;
+
+            if (config.lightDepend=='night')
+                text =`(${this.msg.end}-${this.msg.start}) ${armed()? outState : 'disarmed'}`;
+            else if (config.lightDepend=='day')
+                text =`(${this.msg.start}-${this.msg.end}) ${armed()? outState : 'disarmed'}`;
+         
+            let fill = isOn(powerState)? 'green': 'grey';
+            let shape = isOn(rfState)? 'dot': 'ring';
+
+            this.status({fill, shape, text});
         }
 
         var tick = function() {
             var now = new Date();
-            var times = SunCalc.getTimes(now, node.lat, node.lon);
+            var times = SunCalc.getTimes(now, config.lat, config.lon);
             var nowMillis = toMills(now);
-            var startMillis = toMills(times[node.start], node.startOffset); 
-            var endMillis =   toMills(times[node.end], node.endOffset); 
+            var startMillis = toMills(times[config.start], config.startOffset); 
+            var endMillis =   toMills(times[config.end], config.endOffset); 
             var e1 = nowMillis - startMillis;
             var e2 = nowMillis - endMillis;
        
@@ -68,63 +141,26 @@ module.exports = function (RED) {
             node.msg = {
                 topic: 'pir',
                 isNight:calcNight, 
-                nauticalDawn: timStr(times, 'nauticalDawn'),
-                dawn:timStr(times, 'dawn'),
-                sunrise:timStr(times, 'sunrise'),
-                sunriseEnd: timStr(times, 'sunriseEnd'),
-                goldenHourEnd:timStr(times, 'goldenHourEnd'),
-                goldenHour: timStr(times, 'goldenHour'),
-                sunsetStart:timStr(times, 'sunsetStart'),
-                sunset:timStr(times, 'sunset'),
-                dusk:timStr(times, 'dusk'),
-                nauticalDusk:timStr(times, 'nauticalDusk'),
-                night:timStr(times, 'night'),
                 start: timStr(new Date(startMillis)),
                 end: timStr(new Date(endMillis)),
                 now: timStr(new Date(nowMillis))
             };
-           
-            node.updateState.call(node);
+            showState();
+
         }
 
         // Setup mqtt broker
         const brokerConnection = RED.nodes.getNode(config.broker);
 
         // Topics
-        var topicTeleResult = `${config.telePrefix}/${config.device}/RESULT`;
-        var topicLWTResult = `${config.telePrefix}/${config.device}/LWT`;
-        var topicCmdStatus = `${config.cmdPrefix}/${config.device}/status`;
+        var topicTeleResult = `${telePrefix}/${config.device}/RESULT`;
+        var topicLWTResult = `${telePrefix}/${config.device}/LWT`;
+        var topicCmdStatus = `${cmdPrefix}/${config.device}/status`;
 
-        if(config.mode == 1){ //Custom (%topic%/%prefix%/)
-            topicTeleResult = `${config.telePrefix}/${config.device}/RESULT`;
-            topicLWTResult = `${config.telePrefix}/${config.device}/LWT`;
-            topicCmdStatus = `${config.device}/${config.cmdPrefix}/status`;
-        }
-        this.updateState = function(state){
-            
-            var outState = this.remaining ? this.remaining +' secs': 'OFF' 
-            let text=outState;
-            var validTime = (
-                this.lightDepend=='always' || 
-                ((this.lightDepend=='night')== this.msg.isNight)
-            )
-            if (this.lightDepend=='night')
-                text =`(${this.msg.end}-${this.msg.start}) ${validTime? outState : 'disarmed'}`;
-            else if (this.lightDepend=='day')
-                text =`(${this.msg.start}-${this.msg.end}) ${validTime? outState : 'disarmed'}`;
-         
-
-            if(this.remaining)
-                this.status({fill: 'green', shape: 'dot', text});
-            else
-                this.status({fill: 'red', shape: 'ring', text});
-        }
+      
 
         this.on('input', function(msg) {
-            if (typeof(msg.payload)=='boolean' && !msg.payload){
-                this.remaining=0;
-                this.updateState();
-            }
+                powerStateChange(msg.payload)
         });
 
         if (brokerConnection) {
@@ -151,19 +187,11 @@ module.exports = function (RED) {
                     config.keyIds.length==0 ||  //anything that moves
                     config.keyIds.indexOf(btnPressed)>=0
                     );
-                var validTime = (
-                    this.lightDepend=='always' || 
-                    ((this.lightDepend=='night')== this.msg.isNight)
-                )
-                if (validButn && validTime ) {
-                    if ( this.remaining==0){
-                        this.send({...this.msg, payload:true, key:btnPressed })
-                        this.timer = countDown(this.offAfter);
-                    }else {
-                        this.remaining=this.offAfter;
-                    }
-                 return true;
-                }
+                
+                this.debug(armed());
+                if (validButn && armed() ) 
+                   rfReceived();
+                
                 
             }, this.id);
             // Publish a start command to get the Status
@@ -185,8 +213,16 @@ module.exports = function (RED) {
         this.on("close", function() {
             if (this.tock) { clearTimeout(this.tock); }
             if (this.tick) { clearInterval(this.tick); }
+            clearTimer();
         });
     }
 
     RED.nodes.registerType('Sonoff RF', SonoffRF);
+    RED.httpAdmin.get('/node-red-sonoff/js/*', function(req, res){
+        var options = {
+            root: __dirname + '/static/',
+            dotfiles: 'deny'
+        };
+        res.sendFile(req.params[0], options);
+    });
 };

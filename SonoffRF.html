@@ -8,8 +8,8 @@
             device: { value: 'sonoff', required: true },
             lightDepend:  { value: 'always' },
             rfType: { value: 'button' },
-            lon: {value:"", validate:function(v) {return ((v>=-180) && (v<=180));} },
-            lat: {value:"", validate:function(v) {return ((v>=-90) && (v<=90));} },
+            lat: {value:"52.6706437", validate:function(v) {return ((v>=-90) && (v<=90));} },
+            lon: {value:"6.2900917", validate:function(v) {return ((v>=-180) && (v<=180));} },
             start: {value:"sunrise", required:true},
             startOffset: {value:0, required:true},
             
