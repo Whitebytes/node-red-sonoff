@@ -73,15 +73,19 @@ module.exports = function (RED) {
             }
         } 
         var powerStateChange = (state) => {
-            clearTimer();
+
+            if (!isSame(state, rfState))
+                clearTimer();
+
             powerState= isOn(state)? states.ON: states.OFF;
-            rfState=states.OFF;
-            if (!isOn(powerState)){
-                currTimer= setTimeout(()=>{
+            if (!isOn(powerState) && config.rfType=='pir'){
+                setTimeout(()=>{
                     rfState=states.OFF;
+                    showState();
                 }, config.offObey*1000);
                 rfState=states.OBEY_OFF;
             }
+            
             showState()
         }
 
