@@ -103,8 +103,8 @@ module.exports = function (RED) {
 
             if (!isSame(state, rfState)){
                 this.send({...this.msg, payload:isOn(state) })
-                rfState=state;
             }
+            rfState=state;
             if (isOn(state) && downCounter>0)
                 countDown();  
             showState();
@@ -162,7 +162,7 @@ module.exports = function (RED) {
         var topicCmdStatus = `${cmdPrefix}/${config.device}/status`;
         
         this.on('input', function(msg) {
-                powerStateChange(msg.payload)
+            powerStateChange(msg.payload)
         });
 
         if (brokerConnection) {

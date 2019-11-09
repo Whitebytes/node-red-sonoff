@@ -30,10 +30,10 @@ module.exports = function (RED) {
         // Topics
         var topicTeleLWT = `${telePrefix}/${config.device}/LWT`;
 
-        var topicCmdPower = `${cmdPrefix}/${config.device}/power`;
+        var topicCmdPower = `${cmdPrefix}/${config.device}/power${config.relaisNo}`;
         var topicCmdStatus = `${cmdPrefix}/${config.device}/status`;
 
-        var topicStatsPower = `${statPrefix}/${config.device}/POWER`;
+        var topicStatsPower = `${statPrefix}/${config.device}/POWER${config.relaisNo}`;
         var topicStatsStatus = `${statPrefix}/${config.device}/STATUS`;
 
         var groupComands = `group-${cmdPrefix}/+/POWER`;
