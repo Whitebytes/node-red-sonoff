@@ -1,6 +1,6 @@
 {
   "name": "node-red-sonoff",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Sonoff Tasmota nodeset",
   "main": "node-red-sonoff.js",
   "scripts": {
