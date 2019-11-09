@@ -26,14 +26,14 @@ module.exports = function (RED) {
 
         // Setup mqtt broker
         const brokerConnection = RED.nodes.getNode(config.broker);
-
+        var relaisNo = config.relaisNo || "";
         // Topics
         var topicTeleLWT = `${telePrefix}/${config.device}/LWT`;
 
-        var topicCmdPower = `${cmdPrefix}/${config.device}/power${config.relaisNo}`;
+        var topicCmdPower = `${cmdPrefix}/${config.device}/power${relaisNo}`;
         var topicCmdStatus = `${cmdPrefix}/${config.device}/status`;
 
-        var topicStatsPower = `${statPrefix}/${config.device}/POWER${config.relaisNo}`;
+        var topicStatsPower = `${statPrefix}/${config.device}/POWER${relaisNo}`;
         var topicStatsStatus = `${statPrefix}/${config.device}/STATUS`;
 
         var groupComands = `group-${cmdPrefix}/+/POWER`;
