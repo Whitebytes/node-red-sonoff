@@ -1,55 +1,49 @@
 <script type="text/javascript">
-    RED.nodes.registerType('Sonoff basic', {
-        category: 'Sonoff',
-        color: '#28AFB0',
-        defaults: {
-            mode:{ value: '0'},
-            broker: { type: 'mqtt-broker', required: true },
-            device: { value: 'sonoff', required: true },
-            name: { value: ''},
-            maxOn: {},
-            groupTopics: {},
-            relaisNo: {},
-            minInterval:{value: 1000, required: true}
-        },
-        icon: 'light.png',
-        inputs: 1,
-        outputs: 1,
-        label: function() {
-            return this.name || this.device;
-        }
-    });
-    </script>
-    
-    <script type="text/x-red" data-template-name="Sonoff basic">
-        <div class="form-row">
-            <label for="node-input-device"><i class="icon-tag"></i> Id</label>
-            <input type="text" id="node-input-device" placeholder="Sonoff id (Default: sonoff)">
-        </div>
-        <div class="form-row">
-            <label for="node-input-broker"><i class="fa fa-globe"></i> Mqtt</label>
-            <input type="text" id="node-input-broker">
-        </div>
-        <div class="form-row">
-            <label for="node-input-name"><i class="icon-tag"></i> Name</label>
-            <input type="text" id="node-input-name" placeholder="Name">
-        </div>
-        
-        <div class="form-row">
-            <label for="node-input-minInterval"><i class="fa fa-comment"></i> minimal switch time(ms)</label>
-            <input type="number" id="node-input-minInterval" placeholder="min int">
-        </div>
-        <div class="form-row">
-            <label for="node-input-maxOn"><i class="fa fa-comment"></i>Max on time in secs</label>
-            <input type="number" id="node-input-maxOn" placeholder="min int">
-        </div>
-        <div class="form-row">
-            <label for="node-input-groupTopics"><i class="fa fa-comment"></i>Group topics</label>
-            <input type="text" id="node-input-groupTopics" placeholder=",-seperated mqttopics">
-        </div>
-        <div class="form-row">
-            <label for="node-input-relaisNo"><i class="fa fa-comment"></i>Relais no</label>
-            <input type="number" id="node-input-relaisNo" placeholder="use only with multiple relais">
-        </div>
-    </script>
-    
+  RED.nodes.registerType("Sonoff basic", {
+    category: "Sonoff",
+    color: "#28AFB0",
+    defaults: {
+      mode: { value: "0" },
+      broker: { type: "mqtt-broker", required: true },
+      device: { value: "sonoff", required: true },
+      name: { value: "" },
+      maxOn: {},
+      relaisNo: {},
+      minInterval: { value: 1000, required: true }
+    },
+    icon: "light.png",
+    inputs: 1,
+    outputs: 1,
+    label: function() {
+      return this.name || this.device;
+    }
+  });
+</script>
+
+<script type="text/x-red" data-template-name="Sonoff basic">
+  <div class="form-row">
+      <label for="node-input-device"><i class="icon-tag"></i> Id</label>
+      <input type="text" id="node-input-device" placeholder="Sonoff id (Default: sonoff)">
+  </div>
+  <div class="form-row">
+      <label for="node-input-broker"><i class="fa fa-globe"></i> Mqtt</label>
+      <input type="text" id="node-input-broker">
+  </div>
+  <div class="form-row">
+      <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+      <input type="text" id="node-input-name" placeholder="Name">
+  </div>
+
+  <div class="form-row">
+      <label for="node-input-minInterval"><i class="fa fa-comment"></i> minimal switch time(ms)</label>
+      <input type="number" id="node-input-minInterval" placeholder="min int">
+  </div>
+  <div class="form-row">
+      <label for="node-input-maxOn"><i class="fa fa-comment"></i>Max on time in secs</label>
+      <input type="number" id="node-input-maxOn" placeholder="min int">
+  </div>
+  <div class="form-row">
+      <label for="node-input-relaisNo"><i class="fa fa-comment"></i>Relais no</label>
+      <input type="number" id="node-input-relaisNo" placeholder="use only with multiple relais">
+  </div>
+</script>
